@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Click The Target — Progressive Timed Game</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --bg1: #06061a;
+      --bg2: #08102a;
+      --card: rgba(255, 255, 255, 0.04);
+      --accent: #7ef7c5;
+      --accent-2: #66d9ff;
+      --muted: rgba(255, 255, 255, 0.55);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1000px 400px at 10% 10%, rgba(102, 217, 255, 0.04), transparent),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      color: #e9f7f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .stage {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01));
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .play-area {
+      width: 100%;
+      height: 460px;
+      max-height: 70vh;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(8, 12, 20, 0.2));
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      touch-action: manipulation;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      cursor: crosshair;
+    }
+
+    .target {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02)),
+        linear-gradient(180deg, #ff8a71, #ff3b6e);
+      box-shadow: 0 6px 18px rgba(255, 60, 120, 0.12), 0 2px 6px rgba(0, 0, 0, 0.45);
+      color: #0b0b10;
+      font-weight: 700;
+      transform-origin: center;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 180ms ease;
+      will-change: transform, left, top;
+    }
+
+    .target:active {
+      transform: scale(0.92);
+    }
+
+    .hud {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .panel {
+      background: var(--card);
+      padding: 12px;
+      border-radius: 10px;
+      min-width: 120px;
+    }
+
+    .panel .label {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .panel .value {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 6px
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+      color: var(--accent);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button.primary {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #04121a;
+      border: none;
+      box-shadow: 0 8px 24px rgba(34, 211, 197, 0.12);
+    }
+
+    aside {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01));
+      padding: 14px;
+      border-radius: 12px;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .meter {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .meter>i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #66d9ff, #7ef7c5);
+      width: 100%;
+      transition: width 200ms linear;
+    }
+
+    .big {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    footer {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px
+    }
+
+    @media (max-width:980px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding: 8px;
+      }
+
+      aside {
+        height: auto;
+        order: 3
+      }
+
+      .stage {
+        order: 1
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" role="application" aria-label="Click the Target game">
+    <header>
+      <div>
+        <h1>Click The Target</h1>
+        <div class="subtitle">Timed challenge — target gets faster and smaller as you hit it</div>
+      </div>
+      <div class="controls">
+        <button id="startBtn" class="primary" aria-pressed="false">Start</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <section class="stage" aria-hidden="false">
+      <div class="play-area" id="playArea" tabindex="0" aria-label="Game play area, click the targets">
+        <!-- Target element injected dynamically -->
+      </div>
+
+      <div class="hud" style="margin-top:10px;">
+        <div class="panel">
+          <div class="label">Time Left</div>
+          <div class="value" id="timeValue">30.0s</div>
+        </div>
+        <div class="panel">
+          <div class="label">Score (Hits)</div>
+          <div class="value" id="scoreValue">0</div>
+        </div>
+        <div class="panel">
+          <div class="label">Accuracy</div>
+          <div class="value" id="accValue">0%</div>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="muted">Game settings</div>
+      <div class="panel">
+        <div class="label">Mode</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <div class="big">Progressive</div>
+        </div>
+        <div class="muted" style="margin-top:8px">One timed round. Target starts easy and speeds up as you hit it.</div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Round Length</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="preset" data-time="15">15s</button>
+          <button class="preset primary" data-time="30">30s</button>
+          <button class="preset" data-time="60">60s</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Progress</div>
+        <div style="margin-top:10px" class="meter" title="Progress bar">
+          <i id="progressBar" style="width:100%"></i>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="label">High Score (local)</div>
+        <div style="font-size:28px;font-weight:800;margin-top:6px" id="highScore">0</div>
+        <div class="muted" style="margin-top:8px">Best hits recorded on this browser</div>
+      </div>
+
+      <div style="margin-top:auto" class="muted">Tip: click on the moving targets as fast as you can. Missing (clicking
+        background) reduces your accuracy but doesn't immediately end the round.</div>
+    </aside>
+
+    <footer>Have fun! Want sound effects or multiple target types? Say the word.</footer>
+  </div>
+
+  <script>
+    /*
+    Click The Target — single-file JS
+    Features:
+    - Timed round (selectable presets)
+    - Target speed and size progressively change as player scores
+    - Score, hits, attempts, accuracy
+    - Local high score saved to localStorage
+    - Mobile touch-friendly
+    */
+
+    // --- Config / State ---
+    const playArea = document.getElementById('playArea');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const timeValue = document.getElementById('timeValue');
+    const scoreValue = document.getElementById('scoreValue');
+    const accValue = document.getElementById('accValue');
+    const progressBar = document.getElementById('progressBar');
+    const highScoreEl = document.getElementById('highScore');
+    const presetButtons = document.querySelectorAll('.preset');
+
+    let roundLength = 30.0; // seconds (default)
+    let timeLeft = roundLength;
+    let running = false;
+    let paused = false;
+
+    let hits = 0;
+    let attempts = 0; // total clicks inside play area (hits + misses)
+    let targetEl = null;
+
+    let moveInterval = 1000;   // ms between automatic moves
+    let minInterval = 220;     // fastest possible
+    let intervalDecay = 0.95;  // multiply moveInterval by this on each hit
+
+    let targetSize = 64;       // px starting diameter
+    let minSize = 26;          // px smallest diameter
+    let sizeDecay = 0.96;      // multiply on each hit
+
+    let spawnTimer = null;
+    let countdownTimer = null;
+    let endTime = 0;
+
+    const HIGH_KEY = 'click-target-highscore-v1';
+    highScoreEl.textContent = localStorage.getItem(HIGH_KEY) || 0;
+
+    // --- Utility ---
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    // --- Target creation / placement ---
+    function createTarget(sizePx) {
+      const el = document.createElement('button');
+      el.className = 'target';
+      el.setAttribute('aria-label', 'Target');
+      el.style.width = el.style.height = sizePx + 'px';
+      el.innerHTML = '✦';
+      // style variations
+      el.style.fontSize = Math.max(12, Math.round(sizePx * 0.35)) + 'px';
+      el.style.boxShadow = `0 8px ${Math.round(sizePx / 2)}px rgba(255,80,120,0.12), 0 2px 6px rgba(0,0,0,0.35)`;
+      el.addEventListener('click', onTargetClick);
+      // touch friendly: prevent delay
+      el.addEventListener('touchstart', e => { e.preventDefault(); el.click(); }, { passive: false });
+      return el;
+    }
+
+    function placeTargetRandom(el) {
+      const areaW = playArea.clientWidth;
+      const areaH = playArea.clientHeight;
+      const elW = el.offsetWidth;
+      const elH = el.offsetHeight;
+      const maxX = Math.max(4, areaW - elW - 4);
+      const maxY = Math.max(4, areaH - elH - 4);
+      const x = randInt(6, maxX);
+      const y = randInt(6, maxY);
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+    }
+
+    // Move target (called on interval or after each hit)
+    function moveTargetNow() {
+      if (!targetEl) return;
+      // add tiny pop animation
+      targetEl.style.transition = 'transform 100ms ease';
+      targetEl.style.transform = 'scale(1.06)';
+      requestAnimationFrame(() => {
+        // revert scale after short time
+        setTimeout(() => { if (targetEl) targetEl.style.transform = 'scale(1)'; }, 80);
+      });
+      placeTargetRandom(targetEl);
+    }
+
+    // --- Game flow handlers ---
+    function onTargetClick(e) {
+      e.stopPropagation();
+      if (!running || paused) return;
+      hits++;
+      attempts++;
+      // speed up & shrink target progressively
+      moveInterval = Math.max(minInterval, Math.round(moveInterval * intervalDecay));
+      targetSize = Math.max(minSize, Math.round(targetSize * sizeDecay));
+      // update UI
+      updateScoreUI();
+      // recreate target with new size for crispness
+      if (targetEl) {
+        targetEl.removeEventListener('click', onTargetClick);
+        playArea.removeChild(targetEl);
+      }
+      targetEl = createTarget(targetSize);
+      playArea.appendChild(targetEl);
+      placeTargetRandom(targetEl);
+      // reset spawn interval quickly (restart timer)
+      restartSpawnTimer();
+      // brief hit feedback
+      flashBackground();
+    }
+
+    function onPlayAreaClick(e) {
+      // Count as attempt (miss) only if click target wasn't the target
+      if (!running || paused) return;
+      // If click target was already handled, it won't reach here due to stopPropagation.
+      attempts++;
+      updateScoreUI();
+      // small penalty: nudge moveInterval slightly faster to increase challenge
+      moveInterval = Math.max(minInterval, moveInterval * 0.985);
+    }
+
+    function updateScoreUI() {
+      scoreValue.textContent = hits;
+      const acc = attempts === 0 ? 0 : Math.round((hits / attempts) * 100);
+      accValue.textContent = acc + '%';
+    }
+
+    function flashBackground() {
+      // subtle flash to indicate hit
+      playArea.style.transition = 'background-color 120ms';
+      playArea.style.backgroundColor = 'rgba(126,247,197,0.03)';
+      setTimeout(() => { playArea.style.backgroundColor = ''; }, 120);
+    }
+
+    function restartSpawnTimer() {
+      if (spawnTimer) {
+        clearInterval(spawnTimer);
+        spawnTimer = null;
+      }
+      spawnTimer = setInterval(() => {
+        moveTargetNow();
+      }, moveInterval);
+    }
+
+    function startRound() {
+      if (running) return;
+      running = true;
+      paused = false;
+      startBtn.setAttribute('aria-pressed', 'true');
+      startBtn.textContent = 'Running';
+      // reset state
+      hits = 0; attempts = 0;
+      moveInterval = 1000;
+      targetSize = 64;
+      updateScoreUI();
+
+      // ensure a target exists
+      if (targetEl) {
+        targetEl.removeEventListener('click', onTargetClick);
+        targetEl.remove();
+        targetEl = null;
+      }
+      targetEl = createTarget(targetSize);
+      playArea.appendChild(targetEl);
+      placeTargetRandom(targetEl);
+
+      // timers
+      timeLeft = roundLength;
+      endTime = performance.now() + roundLength * 1000;
+      updateTimeUI();
+
+      // spawn/move timer
+      restartSpawnTimer();
+
+      // countdown loop using requestAnimationFrame for smooth time display
+      function tick() {
+        if (!running || paused) return;
+        const now = performance.now();
+        timeLeft = Math.max(0, (endTime - now) / 1000);
+        updateTimeUI();
+        if (timeLeft <= 0) {
+          endRound();
+          return;
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function pauseRound() {
+      if (!running) return;
+      paused = !paused;
+      pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+      startBtn.disabled = paused;
+      if (paused) {
+        // stop spawn timer but keep the target visible
+        if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
+        // adjust remaining time relative to now
+        const now = performance.now();
+        timeLeft = Math.max(0, (endTime - now) / 1000);
+      } else {
+        // resume: set new endTime and restart spawn timer
+        endTime = performance.now() + timeLeft * 1000;
+        restartSpawnTimer();
+        requestAnimationFrame(function tick() { if (!running || paused) return; const now = performance.now(); timeLeft = Math.max(0, (endTime - now) / 1000); updateTimeUI(); if (timeLeft <= 0) { endRound(); return; } requestAnimationFrame(tick); });
+      }
+    }
+
+    function endRound() {
+      running = false;
+      paused = false;
+      startBtn.setAttribute('aria-pressed', 'false');
+      startBtn.textContent = 'Start';
+      pauseBtn.textContent = 'Pause';
+      if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
+      // final UI
+      updateTimeUI(true);
+      // check high score
+      const prevHigh = parseInt(localStorage.getItem(HIGH_KEY) || '0', 10);
+      if (hits > prevHigh) {
+        localStorage.setItem(HIGH_KEY, hits);
+        highScoreEl.textContent = hits;
+      } else {
+        highScoreEl.textContent = prevHigh;
+      }
+      // show a simple overlay text
+      showEndOverlay();
+    }
+
+    function resetRound() {
+      if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
+      if (targetEl) { targetEl.removeEventListener('click', onTargetClick); targetEl.remove(); targetEl = null; }
+      running = false;
+      paused = false;
+      hits = 0; attempts = 0;
+      timeLeft = roundLength;
+      startBtn.setAttribute('aria-pressed', 'false');
+      startBtn.textContent = 'Start';
+      pauseBtn.textContent = 'Pause';
+      updateScoreUI();
+      updateTimeUI();
+      progressBar.style.width = '100%';
+    }
+
+    // --- UI updates ---
+    function updateTimeUI(final = false) {
+      timeValue.textContent = timeLeft.toFixed(1) + 's';
+      const pct = clamp((timeLeft / roundLength) * 100, 0, 100);
+      progressBar.style.width = pct + '%';
+      if (final) {
+        timeValue.textContent = '0.0s';
+      }
+    }
+
+    // --- Overlay / end message ---
+    function showEndOverlay() {
+      const overlay = document.createElement('div');
+      overlay.style.position = 'absolute';
+      overlay.style.left = '0';
+      overlay.style.top = '0';
+      overlay.style.right = '0';
+      overlay.style.bottom = '0';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      overlay.style.background = 'linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.9))';
+      overlay.style.zIndex = '50';
+      overlay.style.backdropFilter = 'blur(4px)';
+      overlay.innerHTML = `
+    <div style="text-align:center;color:#fff;max-width:560px;padding:18px">
+      <div style="font-size:28px;font-weight:800;margin-bottom:8px">Round Over</div>
+      <div style="font-size:18px;margin-bottom:12px">You scored <strong style="color:#7ef7c5">${hits}</strong> hits with <strong style="color:#66d9ff">${attempts}</strong> attempts.<br>Accuracy: <strong>${attempts ? Math.round(hits / attempts * 100) : 0}%</strong></div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+        <button id="overlayRestart" class="primary">Play Again</button>
+        <button id="overlayClose">Close</button>
+      </div>
+    </div>
+  `;
+      document.querySelector('.stage').appendChild(overlay);
+      document.getElementById('overlayClose').addEventListener('click', () => overlay.remove());
+      document.getElementById('overlayRestart').addEventListener('click', () => {
+        overlay.remove();
+        resetRound();
+        startRound();
+      });
+    }
+
+    // --- Preset handling ---
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        presetButtons.forEach(b => b.classList.remove('primary'));
+        btn.classList.add('primary');
+        roundLength = parseFloat(btn.dataset.time);
+        resetRound();
+      });
+    });
+
+    // --- Event wiring ---
+    startBtn.addEventListener('click', () => {
+      if (running) return;
+      startRound();
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      pauseRound();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      resetRound();
+    });
+
+    // clicking in the play area counts as attempts (misses) if not on target
+    playArea.addEventListener('click', onPlayAreaClick);
+    // also touch taps on background
+    playArea.addEventListener('touchstart', function (e) {
+      // if touch target is the target element, the target's touch handler will run; otherwise count as miss
+      if (!running || paused) return;
+      const t = e.target;
+      if (!t.classList || !t.classList.contains('target')) {
+        attempts++;
+        updateScoreUI();
+      }
+    }, { passive: true });
+
+    // handle resize so target doesn't get stuck outside bounds
+    window.addEventListener('resize', () => {
+      if (targetEl) placeTargetRandom(targetEl);
+    });
+
+    // initial reset state
+    resetRound();
+
+    // ensure high score shows
+    highScoreEl.textContent = localStorage.getItem(HIGH_KEY) || 0;
+
+  </script>
+</body>
+
+</html>
